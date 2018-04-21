@@ -196,7 +196,7 @@ def mutexify(node1: PgNode, node2: PgNode):
 class PlanningGraph():
     """
     A planning graph as described in chapter 10 of the AIMA text. The planning
-    graph can be used to reason about 
+    graph can be used to reason about
     """
 
     def __init__(self, problem: Problem, state: str, serial_planning=True):
@@ -305,7 +305,29 @@ class PlanningGraph():
         # for example, the A0 level will iterate through all possible actions for the problem and add a PgNode_a to a_levels[0]
         #   set iff all prerequisite literals for the action hold in S0.  This can be accomplished by testing
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
-        #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
+        #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set
+
+        # Initialize new a_level
+        self.a_levels.append(set())
+        for action in self.all_actions:
+            cand_a_node = PgNode_a(action)
+            cand_parents = []
+            precond_total = len(cand_a_node.prenodes)
+            precond_count = 0
+
+            for prenode in cand_a_node.prenodes:
+                for s_node in self.s_levels[level]:
+                    if prenode == s_node:
+                        cand_parents.append(s_node)
+                        precond_count+=1
+                # found an action with all prerequisites satisfied
+                if precond_count == precond_total:
+                    for parent in cand_parents:
+                        parent.children.add(cand_a_node)
+                        cand_a_node.parents.add(parent)
+
+                    self.a_levels[level].add(cand_a_node)
+
 
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
@@ -324,6 +346,16 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+
+        # Initialize new a_level
+        self.s_levels.append(set())
+
+        for a_node in self.a_levels[level-1]:
+
+            for effect in a_node.effnodes:
+                a_node.children.add(effect)
+                effect.parents.add(a_node)
+                self.s_levels[level].add(effect)
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -386,7 +418,7 @@ class PlanningGraph():
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
-        Test a pair of actions for mutual exclusion, returning True if the 
+        Test a pair of actions for mutual exclusion, returning True if the
         effect of one action is the negation of a precondition of the other.
 
         HINT: The Action instance associated with an action node is accessible
