@@ -414,7 +414,16 @@ class PlanningGraph():
         :return: bool
         """
         # TODO test for Inconsistent Effects between nodes
+        for pos_effect in node_a1.action.effect_add:
+            if pos_effect in node_a2.action.effect_rem:
+                return True
+
+        for neg_effect in node_a1.action.effect_rem:
+            if neg_effect in node_a2.action.effect_add:
+                return True
+
         return False
+
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
@@ -430,7 +439,24 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        # TODO test for Interference between nodes
+        # check interference of a1 effects with a2 preconds
+        for pos_effect in node_a1.action.effect_add:
+            if pos_effect in node_a2.action.precond_neg:
+                return True
+
+        for neg_effect in node_a1.action.effect_rem:
+            if neg_effect in node_a2.action.precond_pos:
+                return True
+
+        # check interference of a2 effects with a1 preconds
+        for pos_effect in node_a2.action.effect_add:
+            if pos_effect in node_a1.action.precond_neg:
+                return True
+
+        for neg_effect in node_a2.action.effect_rem:
+            if neg_effect in node_a1.action.precond_pos:
+                return True
+
         return False
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -444,7 +470,14 @@ class PlanningGraph():
         :return: bool
         """
 
-        # TODO test for Competing Needs between nodes
+        for pos_precond in node_a1.action.precond_pos:
+            if pos_precond in node_a2.action.precond_neg:
+                return True
+
+        for neg_precond in node_a1.action.precond_neg:
+            if neg_precond in node_a2.action.precond_pos:
+                return True
+
         return False
 
     def update_s_mutex(self, nodeset: set):
