@@ -478,6 +478,11 @@ class PlanningGraph():
             if neg_precond in node_a2.action.precond_pos:
                 return True
 
+        for parent1 in node_a1.parents:
+            for parent2 in node_a2.parents:
+                if parent1.is_mutex(parent2):
+                    return True
+
         return False
 
     def update_s_mutex(self, nodeset: set):
@@ -513,6 +518,10 @@ class PlanningGraph():
         :return: bool
         """
         # TODO test for negation between nodes
+        if node_s1.symbol == node_s2.symbol:
+            if node_s1.is_pos != node_s2.is_pos:
+                return True
+
         return False
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
@@ -531,7 +540,17 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
-        # TODO test for Inconsistent Support between nodes
+        count1 = 0
+        count2 = 0
+        for action1 in node_s1.parents:
+            for action2 in node_s2.parents:
+                if action1.is_mutex(action2):
+                    count1+=1
+                    count2+=1
+
+        if count1 == len(node_s1.parents) or count2 == len(node_s2.parents):
+            return True
+
         return False
 
     def h_levelsum(self) -> int:
@@ -542,4 +561,15 @@ class PlanningGraph():
         level_sum = 0
         # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
+
+        goals = self.problem.goal.copy()
+        for i in range(len(self.s_levels)):
+            for node in self.s_levels[i]:
+                expr_string = node.symbol if node.is_pos else ("~%s") % node.symbol
+                literal = expr(expr_string)
+                for goal in goals:
+                    if goal == literal:
+                        level_sum+=i
+                        goals.remove(goal)
+
         return level_sum
